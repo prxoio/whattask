@@ -16,8 +16,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import GoogleSignInButton from "../github-auth-button";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useRouter } from "next/router";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
@@ -27,6 +28,7 @@ const formSchema = z.object({
 type UserFormValue = z.infer<typeof formSchema>;
 
 export default function UserAuthForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const [loading, setLoading] = useState(false);
@@ -41,15 +43,28 @@ export default function UserAuthForm() {
 
   const onSubmit = async (data: UserFormValue) => {
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
-     
-      // Redirect to dashboard or handle successful login
+      // Check if user is already logged in
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in, redirect to dashboard
+          router.push("/dashboard");
+        } else {
+          // No user is signed in, create a new user
+          createUserWithEmailAndPassword(auth, data.email, data.password)
+            .then(() => {
+              // After creating user, redirect to dashboard
+              router.push("/dashboard");
+            })
+            .catch((error) => {
+              // Handle Errors here.
+              var errorCode = error.code;
+              var errorMessage = error.message;
+              console.error("Error creating user:", errorCode, errorMessage);
+            });
+        }
+      });
     } catch (error) {
-      // Handle Errors here.
-      const errorCode = (error as any).code;
-      const errorMessage = (error as any).message;
-      console.log(errorCode, errorMessage);
-
+      console.error("Error in onSubmit:", error);
     }
   };
   return (
