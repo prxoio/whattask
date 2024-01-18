@@ -16,9 +16,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import GoogleSignInButton from "../github-auth-button";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
+  password: z.string().min(6, { message: "Enter a valid password" }),
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -29,6 +32,7 @@ export default function UserAuthForm() {
   const [loading, setLoading] = useState(false);
   const defaultValues = {
     email: "demo@gmail.com",
+    password: "123456",
   };
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
@@ -36,12 +40,18 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
-    signIn("credentials", {
-      email: data.email,
-      callbackUrl: callbackUrl ?? "/dashboard",
-    });
-  };
+    try {
+      await createUserWithEmailAndPassword(auth, data.email, data.password);
+     
+      // Redirect to dashboard or handle successful login
+    } catch (error) {
+      // Handle Errors here.
+      const errorCode = (error as any).code;
+      const errorMessage = (error as any).message;
+      console.log(errorCode, errorMessage);
 
+    }
+  };
   return (
     <>
       <Form {...form}>
@@ -64,6 +74,23 @@ export default function UserAuthForm() {
                   />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Enter your password..."
+                    disabled={loading}
+                    {...field}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

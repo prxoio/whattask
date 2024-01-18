@@ -1,6 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import CredentialProvider from "next-auth/providers/credentials";
+import { getFirestore, doc, getDoc } from "firebase/firestore"; // import Firestore functions
+import { app } from "./firebase";
+
+const db = getFirestore(app); // initialize Firestore
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,22 +19,31 @@ export const authOptions: NextAuthOptions = {
           type: "email",
           placeholder: "example@gmail.com",
         },
+        password: {
+          label: "password",
+          type: "password",
+        },
       },
       async authorize(credentials, req) {
-        const user = { id: "1", name: "John", email: credentials?.email };
-        if (user) {
-          // Any object returned will be saved in `user` property of the JWT
+
+        const docRef = doc(db, "users", credentials?.email ?? ""); // replace "users" with your collection name
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().password === credentials?.password) {
+          const user = { id: docSnap.id, name: docSnap.data().name, email: credentials?.email };
           return user;
         } else {
-          // If you return null then an error will be displayed advising the user to check their details.
           return null;
-
-          // You can also Reject this callback with an Error thus the user will be sent to the error page with the error message as a query parameter
         }
       },
     }),
   ],
   pages: {
     signIn: "/", //sigin page
+  },
+  callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      return true
+    },
   },
 };
