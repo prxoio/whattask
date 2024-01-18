@@ -18,7 +18,7 @@ import * as z from "zod";
 import GoogleSignInButton from "../github-auth-button";
 import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
@@ -110,8 +110,8 @@ export default function UserAuthForm() {
             )}
           />
 
-          <Button disabled={loading} className="ml-auto w-full" type="submit">
-            Continue With Email
+          <Button disabled={loading} className="ml-auto w-full mt-5" type="submit">
+            Continue
           </Button>
         </form>
       </Form>
