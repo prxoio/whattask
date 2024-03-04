@@ -1,19 +1,20 @@
 import BreadCrumb from "@/components/breadcrumb";
-import { ProductForm } from "@/components/forms/product-form";
+import { TaskForm } from "@/components/forms/task-form";
 import React from "react";
 
 export default function Page() {
   const breadcrumbItems = [
-    { title: "Team", link: "/dashboard/employee" },
-    { title: "Create", link: "/dashboard/employee/create" },
+    { title: "Tasks", link: "/dashboard/tasks" },
+    { title: "Create", link: "/dashboard/task/create" },
   ];
   return (
     <div className="flex-1 space-y-4 p-8">
       <BreadCrumb items={breadcrumbItems} />
-      <ProductForm
+      <TaskForm
         categories={[
-          { _id: "shirts", name: "shirts" },
-          { _id: "pants", name: "pants" },
+          { _id: "urgent", name: "Urgent" },
+          { _id: "normal", name: "Normal" },
+          { _id: "low", name: "Low" },
         ]}
         initialData={null}
         key={null}

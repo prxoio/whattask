@@ -10,19 +10,24 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import GoogleSignInButton from "../github-auth-button";
-import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
+
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
-  password: z.string().min(6, { message: "Enter a valid password" }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters" }),
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -32,9 +37,10 @@ export default function UserAuthForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const defaultValues = {
-    email: "demo@gmail.com",
-    password: "123456",
+    email: "",
+    password: "",
   };
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
@@ -42,31 +48,40 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
+    //firebase auth logic
+    const { email, password } = data;
+    setLoading(true);
+
+    if (!data) {
+      return null;
+    }
+
     try {
-      // Check if user is already logged in
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          // User is signed in, redirect to dashboard
-          router.push("/dashboard");
-        } else {
-          // No user is signed in, create a new user
-          createUserWithEmailAndPassword(auth, data.email, data.password)
-            .then(() => {
-              // After creating user, redirect to dashboard
-              router.push("/dashboard");
-            })
-            .catch((error) => {
-              // Handle Errors here.
-              var errorCode = error.code;
-              var errorMessage = error.message;
-              console.error("Error creating user:", errorCode, errorMessage);
-            });
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      setSuccess(true);
+      setLoading(false);
+      return { id: user.uid, email: user.email, name: user.displayName };
+    } catch (signInError: any) {
+      if (signInError.code !== "auth/user-not-found") {
+        console.error(signInError);
+        try {
+          const { user } = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password,
+          );
+          setSuccess(true);
+          setLoading(false);
+          return { id: user.uid, email: user.email, name: user.displayName };
+        } catch (createUserError) {
+          console.error(createUserError);
+          setLoading(false);
+          return null;
         }
-      });
-    } catch (error) {
-      console.error("Error in onSubmit:", error);
+      }
     }
   };
+
   return (
     <>
       <Form {...form}>
@@ -110,11 +125,31 @@ export default function UserAuthForm() {
             )}
           />
 
-          <Button disabled={loading} className="ml-auto w-full mt-5" type="submit">
-            Continue
-          </Button>
+          {!success && (
+            <Button
+              disabled={loading}
+              className="ml-auto w-full mt-5"
+              type="submit"
+            >
+              Create Account
+            </Button>
+          )}
+
+          {success && (
+            <Button
+              disabled={loading}
+              className="ml-auto w-full mt-5"
+              type="button"
+              onClick={() => {
+                router.push("/dashboard");
+              }}
+            >
+              Success! Continue to Dashboard
+            </Button>
+          )}
         </form>
       </Form>
+
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />

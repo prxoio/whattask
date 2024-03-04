@@ -1,49 +1,21 @@
-import { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import GithubProvider from "next-auth/providers/github";
+import { FirestoreAdapter } from "@auth/firebase-adapter";
+import { initFirestore } from "@auth/firebase-adapter"; // If you're initializing Firestore here
+import { cert, initializeApp } from "firebase-admin/app"; // If using service account for Firebase
 import CredentialProvider from "next-auth/providers/credentials";
-import { getFirestore, doc, getDoc } from "firebase/firestore"; // import Firestore functions
-import { app } from "./firebase";
+import { auth } from "./firebase";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 
-const db = getFirestore(app); // initialize Firestore
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    GithubProvider({
-      clientId: process.env.GITHUB_ID ?? "",
-      clientSecret: process.env.GITHUB_SECRET ?? "",
-    }),
-    CredentialProvider({
-      credentials: {
-        email: {
-          label: "email",
-          type: "email",
-          placeholder: "example@gmail.com",
-        },
-        password: {
-          label: "password",
-          type: "password",
-        },
-      },
-      async authorize(credentials, req) {
-
-        const docRef = doc(db, "users", credentials?.email ?? ""); // replace "users" with your collection name
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists() && docSnap.data().password === credentials?.password) {
-          const user = { id: docSnap.id, name: docSnap.data().name, email: credentials?.email };
-          return user;
-        } else {
-          return null;
-        }
-      },
-    }),
-  ],
-  pages: {
-    signIn: "/", //sigin page
+export const authOptions = {
+  
+   pages: {
+    signIn: "/", // Sign-in page
   },
-  callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
-      return true
-    },
-  },
+  // ... other NextAuth options
 };
