@@ -1,4 +1,3 @@
-```markdown
 # WhatTask
 
 Welcome to **WhatTask**! WhatTask is a web application and WhatsApp bot designed to make task management accessible and convenient. Users can simply send a message to the WhatTask bot on WhatsApp to set reminders and manage tasks effortlessly. This README provides an overview of the technical journey, architecture, challenges faced, and successes achieved in developing WhatTask.
